@@ -1,0 +1,14 @@
+---
+# Variables listed here are applicable to all host groups
+
+http_port: 80
+servername: "virtual"
+serveradmin: "admin@virtual.com"
+documentrootdir: "virtual"
+MaxConnectionsPerChild: 1500
+apache_service: apache2
+apache_daemon: apache2
+apache_daemon_path: /usr/sbin/
+apache_server_root: /etc/apache2
+apache_conf_path: /etc/apache2
+php5-fpm_service: "php5-fpm"

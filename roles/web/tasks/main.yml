@@ -1,0 +1,178 @@
+---
+- name: Update repository
+  lineinfile: dest=/etc/apt/sources.list
+              line='{{item}}'
+  with_items:
+    - 'deb http://us.archive.ubuntu.com/ubuntu/ trusty multiverse'
+    - 'deb-src http://us.archive.ubuntu.com/ubuntu/ trusty multiverse'
+    - 'deb http://us.archive.ubuntu.com/ubuntu/ trusty-updates multiverse'
+    - 'deb-src http://us.archive.ubuntu.com/ubuntu/ trusty-updates multiverse'
+
+- name: Install packages
+  apt: name={{ item }} update_cache=yes state=latest
+  with_items:
+      - git
+      - apache2
+      - apache2-mpm-event
+      - libapache2-mod-php5
+      - php5-fpm
+      - php5-mysql
+
+- name: Start Apache
+  service: name=apache2 state=started enabled=yes
+
+- name: Start PHP5-FPM
+  service: name=php5-fpm state=started enabled=yes
+
+- name: apache2 listen on port {{ http_port }}
+  lineinfile: dest=/etc/apache2/ports.conf regexp="^Listen " line="Listen {{ http_port }}" state=present
+
+#- name: Open TCP socket for php-fpm
+#  lineinfile: dest=/etc/php5/fpm/pool.d/www.conf regexp="^listen = " line="listen = 127.0.0.1:9000/"
+ 
+- name: Create php5.fcgi 
+  file: path=/usr/lib/cgi-bin/php5.fcgi state=touch owner=www-data group=www-data mode=0755 
+  
+#- name: fix cgipath in php-fpm
+#  lineinfile: dest=/etc/php5/fpm/php.ini regexp="^cgi.fix_pathinfo" line="cgi.fix_pathinfo=0"  
+#  notify:
+#  - restart php-fpm
+
+- name: disable Apache modules
+  apache2_module: name={{ item }} state=absent 
+  with_items:
+  - php5
+  - mpm_prefork  
+  notify:
+  - restart apache
+  
+- name: enabled Apache modules
+  apache2_module: name={{ item }} state=present
+  with_items:
+  - actions
+  - proxy  
+  - proxy_fcgi  
+  - alias
+  - mpm_event
+  - rewrite
+
+- name: Configure mpm_event
+  lineinfile: dest=/etc/apache2/mods-available/mpm_event.conf regexp="MaxConnectionsPerChild" line="        MaxConnectionsPerChild   {{ MaxConnectionsPerChild }}" state=present
+#  
+#- name: Enable php-fpm
+#  template:
+#    src: "php5-fpm.conf.j2"
+#    dest: /etc/apache2/conf-available/php5-fpm.conf
+#    owner: root
+#    group: root
+#    mode: 0644  
+#
+- name: Copy the PHP configuration file
+  ini_file: >
+    dest={{ php_fpm_ini_path }}
+    section="{{ item.section }}"
+    option="{{ item.option }}"
+    value="{{ item.value }}"
+    backup=yes
+  with_items: "{{ php_fpm_ini }}"
+  notify:
+   - restart php-fpm
+  tags: [configuration,php,fpm]
+
+- name: Copy default FPM configuration file
+  template: dest={{ php_fpm_config_path }} src=php-fpm.conf.j2
+  when: ansible_os_family == "RedHat"
+  tags: [configuration,php,fpm]
+
+- name: Copy the FPM configuration
+  ini_file: >
+    dest={{ php_fpm_config_path }}
+    section="{{ item.section }}"
+    option="{{ item.option }}"
+    value="{{ item.value }}"
+    backup=yes
+  with_items: "{{ php_fpm_config }}"
+  register: copy_fpm_config
+  notify:
+   - restart php-fpm
+  tags: [configuration,php,fpm]
+
+- name: Delete the include line from the ini file
+  ini_file: >
+    dest={{ php_fpm_config_path }}
+    section=global
+    option=include
+    state=absent
+    backup=no
+  when: copy_fpm_config.changed
+  notify:
+   - restart php-fpm
+  tags: [configuration,php,fpm]
+
+- name: Readd the include line to the ini file
+  ini_file: >
+    dest={{ php_fpm_config_path }}
+    section=global
+    option=include
+    value="{{ php_fpm_pool_d }}/*.conf"
+    state=present
+    backup=no
+  when: copy_fpm_config.changed
+  notify:
+   - restart php-fpm
+  tags: [configuration,php,fpm]
+
+- name: Delete the default POOL configuration file
+  file: >
+    path={{ php_fpm_pool_d }}/{{ php_fpm_default_pool.name }}
+    state=absent
+  when: php_fpm_default_pool.delete
+  tags: [configuration,php,fpm]
+
+- name: Copy the POOL configurations
+  template: >
+    src=pool.conf.j2
+    dest={{ php_fpm_pool_d }}/{{ item['name'] }}.conf
+    backup=yes
+  with_items: "{{ php_fpm_pools }}"
+  when: php_fpm_pools|lower != 'none'
+  notify:
+   - restart php-fpm
+  tags: [configuration,php,fpm]
+
+- name: Check php-fpm syntax of configuration files
+  shell: "{{ php_fpm_binary_name }} -t"
+  register: result
+  changed_when: "result.rc != 0"
+  tags: [configuration,php,fpm]
+
+- name: Start the php5-fpm service
+  service: name={{ php_fpm_service_name }} state=started enabled=yes
+  tags: [service,php,fpm]
+  
+- name: Enable PHP5-FPM
+  command: a2enconf php5-fpm
+
+- name: create /var/www/{{ documentrootdir }} directory
+  file: dest=/var/www/{{ documentrootdir }} state=directory owner=www-data group=www-data mode=0755
+
+- name: copy file to /var/www/{{ documentrootdir }}
+  copy: src=index.php dest=/var/www/{{ documentrootdir }}/index.php mode=0664 
+
+- name: create virtual host file
+  template:
+    src: "virtual.conf.j2"
+    dest: /etc/apache2/sites-available/{{ servername }}.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Enable virtual site {{ servername }}
+  command: a2ensite {{ servername }}
+#  args:
+#    creates: /etc/apache2/sites-enabled/{{ servername }}.conf
+
+- name: Disable default site {{ servername }}
+  command: a2dissite 000-default
+  notify:
+  - restart apache

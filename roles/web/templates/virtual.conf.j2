@@ -1,0 +1,29 @@
+<VirtualHost *:{{ http_port }}>
+    ServerAdmin {{ serveradmin }}
+	ServerName {{ servername }}
+    DocumentRoot /var/www/{{ documentrootdir }}
+    DirectoryIndex index.php
+    <Directory /var/www/{{ documentrootdir }}>
+        RewriteEngine on
+        RewriteBase /
+        RewriteOptions InheritBefore
+        # see if .php is found
+        RewriteCond %{REQUEST_FILENAME} !-d 
+        RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}\.php -f
+        RewriteRule ^(.*)$ $1.php [L]
+        # determine DIR_BASE dynamically
+        RewriteCond %{REQUEST_URI}::$1 ^(.*?/)(.*)::\2$
+        RewriteRule ^(.*)$ - [E=DIR_BASE:%1]
+        # if not found redirect to %{ENV:DIR_BASE}
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule ^ %{ENV:DIR_BASE} [L,R]
+        #RewriteRule ^([^\.]+\.php)$ fcgi://127.0.0.1:9000/var/www/{{ servername }}/$1 [L,P]
+        AllowOverride All
+        Require all granted
+    </Directory>
+    ProxyPassMatch ^/(.*\.php(/.*)?)$ fcgi://127.0.0.1:9000/var/www/{{ servername }}
+    ErrorLog ${APACHE_LOG_DIR}/{{ servername }}.log
+    CustomLog ${APACHE_LOG_DIR}/{{ servername }}.log combined
+</VirtualHost>
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet

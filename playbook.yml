@@ -1,0 +1,15 @@
+---
+# This playbook deploys the whole application stack in this site.
+- name: configure and deploy the webservers and application code
+  hosts: web
+  remote_user: root
+
+  roles:
+    - web
+
+- name: deploy MySQL and configure the databases
+  hosts: db
+  remote_user: root
+
+  roles:
+    - db

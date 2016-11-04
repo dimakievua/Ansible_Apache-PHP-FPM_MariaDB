@@ -1,0 +1,43 @@
+---
+# This playbook will install mysql and create db user and give permissions.
+- name: Add repo file
+  template: src=mariadb_ubuntu.list.j2 dest=/etc/apt/sources.list.d/mariadb.list owner=root group=root mode=0644
+  register: mariadb_list
+
+- name: Add repo key
+  apt_key: id=1BB943DB url=http://keyserver.ubuntu.com/pks/lookup?op=get&search=0xCBCB082A1BB943DB state=present
+  register: mariadb_key
+
+- name: Update apt cache
+  apt: 
+    update_cache: yes
+    cache_valid_time: 3600
+  when: mariadb_list.changed == True or mariadb_key.changed == True
+
+- name: Install MariaDB and python
+  apt: name={{ item }} state=latest
+  with_items:
+      - mariadb-server
+      - mariadb-client
+      - python-mysqldb
+      - php5-mysql
+
+#- name: Create Mysql configuration file
+#  template: src=my.cnf.j2 dest=/etc/my.cnf
+#  notify:
+#  - restart mysql
+
+- name: Start Mysql Service
+  service: name=mysql state=started enabled=true
+
+- name: Create a new database
+  mysql_db: name={{ dbname }} state=present collation=utf8_general_ci
+
+- name: Create a database user
+  mysql_user: name={{ dbuser }} password={{ upassword }} priv=*.*:ALL host=localhost state=present
+
+- name: Copy SQL script
+  copy: src=dump.sql dest=/tmp/dump.sql
+
+- name: Insert sample data
+  shell: cat /tmp/dump.sql | mysql -u {{ dbuser }} -p{{ upassword }} example
