@@ -17,6 +17,9 @@
         # if not found redirect to %{ENV:DIR_BASE}
         RewriteCond %{REQUEST_FILENAME} !-f
         RewriteCond %{REQUEST_FILENAME} !-d
+	# Ignore CSS, IMG and server statistic
+	RewriteCond %{REQUEST_URI} !\.(css|js|gif|png|jpe?g)$
+	RewriteCond %{REQUEST_URI} !=/server-status	
         RewriteRule ^ %{ENV:DIR_BASE} [L,R]
         #RewriteRule ^([^\.]+\.php)$ fcgi://127.0.0.1:9000/var/www/{{ servername }}/$1 [L,P]
         AllowOverride All
