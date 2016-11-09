@@ -23,7 +23,7 @@
 		<a href='#' id="add-content">Test</a>
 			<div class="dummy-content">
 				<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus id orci sapien. Donec tincidunt fringilla fermentum. Cras cursus dictum tellus. In hac habitasse platea dictumst. Nulla facilisi. Vestibulum aliquet accumsan libero vitae semper. Pellentesque felis velit, semper vitae arcu lobortis, placerat sollicitudin risus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</p>
-				<img src="http://demo.tutorialzine.com/2016/03/quick-tip-the-best-way-to-make-sticky-footers/satelite.jpg" alt="Satelite Image">
+				<img src="https://mariadb.org/wp-content/uploads/2015/05/MariaDB-Foundation-horizontal-x52.png" alt="MariaDB">
 				<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus id orci sapien. Donec tincidunt fringilla fermentum. Cras cursus dictum tellus. In hac habitasse platea dictumst. Nulla facilisi. Vestibulum aliquet accumsan libero vitae semper. Pellentesque felis velit, semper vitae arcu lobortis, placerat sollicitudin risus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. 
 				<a href='info.php'>Verify PHP</a></p>
 
