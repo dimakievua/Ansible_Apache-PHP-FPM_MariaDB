@@ -43,8 +43,7 @@
   with_items:
   - php5
   - mpm_prefork  
-  notify:
-  - restart apache
+  ignore_errors: True
   
 - name: enabled Apache modules
   apache2_module: name={{ item }} state=present
@@ -55,18 +54,20 @@
   - alias
   - mpm_event
   - rewrite
+  notify:
+  - restart apache
 
 - name: Configure mpm_event
   lineinfile: dest=/etc/apache2/mods-available/mpm_event.conf regexp="MaxConnectionsPerChild" line="        MaxConnectionsPerChild   {{ MaxConnectionsPerChild }}" state=present
-#  
-#- name: Enable php-fpm
-#  template:
-#    src: "php5-fpm.conf.j2"
-#    dest: /etc/apache2/conf-available/php5-fpm.conf
-#    owner: root
-#    group: root
-#    mode: 0644  
-#
+  
+- name: Enable php-fpm
+  template:
+    src: "php5-fpm.conf.j2"
+    dest: /etc/apache2/conf-available/php5-fpm.conf
+    owner: root
+    group: root
+    mode: 0644  
+
 - name: Copy the PHP configuration file
   ini_file: >
     dest={{ php_fpm_ini_path }}
