@@ -157,8 +157,14 @@
 - name: create /var/www/{{ documentrootdir }} directory
   file: dest=/var/www/{{ documentrootdir }} state=directory owner=www-data group=www-data mode=0755
 
+- name: create /var/www/{{ documentrootdir }}/css directory
+  file: dest=/var/www/{{ documentrootdir }}/css state=directory owner=www-data group=www-data mode=0755
+
 - name: copy file to /var/www/{{ documentrootdir }}
   copy: src=index.php dest=/var/www/{{ documentrootdir }}/index.php mode=0664 
+
+- name: copy css file to /var/www/{{ documentrootdir }}/css
+  copy: src=styles.css dest=/var/www/{{ documentrootdir }}/css/styles.css mode=0664 
 
 - name: create virtual host file
   template:
